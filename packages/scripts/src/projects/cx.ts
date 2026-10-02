@@ -30,6 +30,7 @@ import Typr from 'typr.js';
 import { $console, BackgroundProject } from './background';
 import { CommonWorkOptions, playMedia } from '../utils';
 import { waitForElement, waitForMedia } from '../utils/study';
+import { answerRandomChoiceQuestions } from '../utils/random-choice';
 
 // @ts-ignore
 let top: Window = globalThis.top;
@@ -62,8 +63,6 @@ const state = {
 		playbackRateWarningListenerId: 0
 	}
 };
-
-type VideoQuizStrategy = 'random' | 'ignore';
 
 type Attachment = {
 	/** 只有当 module 为 音视频（并且已经播放完成）时才会有这个属性 */
@@ -168,7 +167,7 @@ export const CXProject = Project.create({
 			namespace: 'cx.guide',
 			configs: {
 				notes: {
-					defaultValue: `请手动进入视频、作业、考试页面，脚本会自动运行。`
+					defaultValue: '进入学习通课程后，在「学习通简易刷课」中设置视频倍速和随机自动答题开关。开关默认关闭，修改后刷新课程页生效。'
 				}
 			},
 			oncomplete() {
@@ -176,11 +175,11 @@ export const CXProject = Project.create({
 					$message.success('已进入学习页面，请等待自动运行...');
 					return;
 				}
-				$message.info('请手动进入视频、作业、考试页面，脚本会自动运行。');
+				$message.info('请进入学习通课程，在「学习通简易刷课」中设置倍速和随机自动答题。');
 			}
 		}),
 		study: new Script({
-			name: '🖥️ 课程学习',
+			name: '🖥️ 学习通简易刷课',
 			namespace: 'cx.new.study',
 			matches: [
 				['任务点页面', '/knowledge/cards'],
@@ -191,26 +190,21 @@ export const CXProject = Project.create({
 				notes: {
 					defaultValue: $ui.notes([
 						['任务点不是顺序执行，如果某一个任务没有动', '请查看是否有其他任务正在学习，耐心等待即可。'],
-						'闯关模式请注意题库如果没完成，需要自己完成才能解锁章节。',
+						'闯关模式需要通过章节测验才能解锁；随机答案不保证通过，请自行检查。',
 						'请勿凌晨刷课，部分学校课程可能会清空进度。',
 						['⚠️目前超星倍速风控严重，如果高倍速', '完成后被清空还原，请调到1-2倍速学习！']
 					]).outerHTML
 				},
 				playbackRate: playbackRate,
-				volume: volume,
-				videoQuizStrategy: {
-					label: '视频内题目',
-					tag: 'select',
-					options: [
-						['random', '随机答题'],
-						['ignore', '忽略']
-					],
+				randomChoiceEnabled: {
+					label: '随机自动答题',
 					attrs: {
-						title:
-							'视频有时在学习过程中会弹出题目，这个好像并不计算在分数内，所以可以忽略，视频可以正常观看，这里提供几个方法处理题目'
+						type: 'checkbox',
+						title: '默认关闭。开启后随机选择视频弹题和章节测验中的单选、多选、判断题；章节测验全部为这些题型时自动提交。'
 					},
-					defaultValue: 'random' as VideoQuizStrategy
+					defaultValue: false
 				},
+				volume: volume,
 				mode: {
 					label: '跳转模式',
 					tag: 'select',
@@ -294,13 +288,6 @@ export const CXProject = Project.create({
 					attrs: { type: 'checkbox', title: '开启：PPT/书籍自动翻阅' },
 					defaultValue: true
 				},
-				enableChapterTest: {
-					elementClassName: 'config-details',
-					showIf: 'cx.new.study.enables',
-					label: '章节测试自动答题',
-					attrs: { type: 'checkbox', title: '开启：章节测试自动答题' },
-					defaultValue: true
-				},
 				enableHyperlink: {
 					elementClassName: 'config-details',
 					showIf: 'cx.new.study.enables',
@@ -310,10 +297,6 @@ export const CXProject = Project.create({
 				}
 			},
 			onrender({ panel }) {
-				if (!CommonProject.scripts.settings.cfg.answererWrappers?.length) {
-					answerWrapperEmptyWarning(10);
-				}
-
 				// 高倍速警告
 				this.offConfigChange(state.study.playbackRateWarningListenerId);
 				state.study.playbackRateWarningListenerId =
@@ -410,10 +393,7 @@ export const CXProject = Project.create({
 		}),
 		work: new Script({
 			name: '✍️ 作业考试脚本',
-			matches: [
-				['作业页面', '/mooc2/work/dowork'],
-				['考试整卷预览页面', '/mooc2/exam/preview']
-			],
+			matches: [],
 			namespace: 'cx.new.work',
 			configs: { notes: workNotes },
 			async oncomplete() {
@@ -561,11 +541,7 @@ export const CXProject = Project.create({
 		}),
 		examRedirect: new Script({
 			name: '考试整卷预览脚本',
-			matches: [
-				['新版考试页面', 'exam-ans/exam/test/reVersionTestStartNew'],
-				// 2023/9月 新增
-				['新版考试页面2', 'mooc-ans/exam/test/reVersionTestStartNew']
-			],
+			matches: [],
 			hideInPanel: true,
 			oncomplete() {
 				if ($gm.unsafeWindow.document.querySelector('.mark_info')?.textContent?.includes('不允许整卷预览')) {
@@ -1436,7 +1412,7 @@ export async function study(
 		}
 	};
 
-	if (CXProject.scripts.study.cfg.mode !== 'manually') {
+	if (opts.mode !== 'manually') {
 		const msg = '页面任务点已完成，即将跳转。';
 		$message.success({ content: msg });
 		$console.info(msg);
@@ -1560,42 +1536,17 @@ function searchJob(
 						}
 					}
 				} else if (chapterTest) {
-					if (!CXProject.scripts.study.cfg.enableChapterTest) {
-						const msg = `章节测试自动答题功能已被关闭（在上方菜单栏，超星学习通-课程学习中开启）。${jobName} 即将跳过`;
-						$message.warn({ content: msg, duration: 10 });
-						$console.warn(msg);
-					} else {
-						const status = win.document.querySelector<HTMLElement>('.testTit_status');
-
-						// 已完成
-						if (status?.classList.contains('testTit_status_complete')) {
-							const msg = `章节测试已完成 : ` + jobName;
-							$message.success({ content: msg });
-							$console.log(msg);
-						} else {
-							if (
-								// 未完成
-								work_type === 'job' ||
-								// / 强制学习
-								(work_type === 'not-job' && CommonProject.scripts.settings.cfg['work-when-no-job'])
-							) {
-								if (opts.workOptions.answererWrappers === undefined || opts.workOptions.answererWrappers.length === 0) {
-									answerWrapperEmptyWarning(0);
-								} else {
-									func = () => {
-										const msg = `开始答题 : ` + jobName;
-										$message.info({ content: msg });
-										$console.log(msg);
-										return JobRunner.chapter(root, opts.workOptions);
-									};
-								}
-							}
-							if (work_type === 'not-job' && CommonProject.scripts.settings.cfg['work-when-no-job'] === false) {
-								const msg = `当前作业 ${jobName} 不是任务点，但待完成，如需开启自动答题请前往：通用-全局设置，开启强制答题。`;
-								$message.warn({ content: msg });
-								$console.warn(msg);
-							}
-						}
+					const completed = win.document.querySelector<HTMLElement>('.testTit_status_complete');
+					if (completed) {
+						$console.log(`章节测试已完成 : ${jobName}`);
+					} else if (!opts.randomChoiceEnabled) {
+						$console.info(`随机自动答题已关闭，跳过章节测试 : ${jobName}`);
+					} else if (work_type === 'job') {
+						func = async () => {
+							$message.info(`正在随机选择 : ${jobName}`);
+							const submitted = await JobRunner.randomChapter(root);
+							if (!submitted) opts.mode = 'manually';
+						};
 					}
 				} else if (read || pptWithAudio || timereader) {
 					if (!CXProject.scripts.study.cfg.enablePPT) {
@@ -1683,7 +1634,7 @@ const JobRunner = {
 		setting: {
 			playbackRate: number;
 			volume: number;
-			videoQuizStrategy: VideoQuizStrategy;
+			randomChoiceEnabled: boolean;
 		},
 		doc: Document
 	) {
@@ -1707,8 +1658,9 @@ const JobRunner = {
 		fixedVideoProgress();
 
 		// 随机作答视频内题目
-		if (setting.videoQuizStrategy === 'random') {
+		if (setting.randomChoiceEnabled) {
 			const loop = async () => {
+				if (!CXProject.scripts.study.cfg.randomChoiceEnabled) return;
 				const submitBtn = () => doc.querySelector<HTMLElement>('#videoquiz-submit');
 				if (submitBtn()) {
 					const list = Array.from(doc.querySelectorAll<HTMLElement>('.ans-videoquiz-opt label'));
@@ -1787,6 +1739,35 @@ const JobRunner = {
 					.catch(reject);
 			}, 200);
 		});
+	},
+	/** Randomly choose answers in a chapter task, then submit only if every question is supported. */
+	async randomChapter(frame: HTMLIFrameElement): Promise<boolean> {
+		const frameWindow = frame.contentWindow as
+			| (Window & { btnBlueSubmit?: () => void; submitCheckTimes?: () => void })
+			| null;
+		if (!frameWindow) return false;
+
+		const result = await answerRandomChoiceQuestions(frameWindow.document);
+		if (result.total === 0 || result.unsupported > 0) {
+			const msg = `章节测试有 ${result.unsupported} 道不支持的题目，已停止自动提交，请手动检查。`;
+			$console.warn(msg);
+			$message.warn({ content: msg, duration: 0 });
+			return false;
+		}
+		if (!CXProject.scripts.study.cfg.randomChoiceEnabled) return false;
+		if (typeof frameWindow.btnBlueSubmit !== 'function' || typeof frameWindow.submitCheckTimes !== 'function') {
+			const msg = '已随机选择选项，但当前页面没有可识别的提交操作，请手动提交。';
+			$console.warn(msg);
+			$message.warn({ content: msg, duration: 0 });
+			return false;
+		}
+
+		await $.sleep(1000);
+		frameWindow.btnBlueSubmit();
+		await $.sleep(3000);
+		frameWindow.submitCheckTimes();
+		$console.info(`已随机完成并提交 ${result.total} 道章节选择题。`);
+		return true;
 	},
 	/**
 	 * 阅读，PPT

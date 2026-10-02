@@ -1,23 +1,22 @@
-<div align="center">
+# 学习通简易助手（基于 OCS）
 
-<div style="padding:8px;border-radius:100%;background:white;width:124px;height:124px">
-<img src="https://cdn.ocsjs.com/resources/img/logo.png" width=124 height=124  >
-</div>
+这是在 [OCS 网课助手](https://github.com/ocsjs/ocsjs) `4.0` 分支、提交 `890686a5e54f9a6d52d1169bae9ea5971e0863c7`（版本 4.15.3）上做的**非官方定制版**。保留 OCS 的学习通任务识别、视频播放和章节推进能力，添加一眼能找到的随机答题开关。上游及本项目遵循仓库根目录的 MIT 许可证。
 
-# OCS 网课助手
+## 安装（电脑网页版）
 
-> OCS (Online Course Script) 网课刷课脚本，帮助大学生解决网课难题
+1. 在 Edge 或 Chrome 安装 [脚本猫](https://docs.scriptcat.org/) 或 [Tampermonkey](https://www.tampermonkey.net/)，二选一即可。浏览器若要求扩展开发者模式，请在扩展管理页面开启并重启浏览器。详细图文步骤见 [OCS 脚本教程](https://docs.ocsjs.com/docs/script)。
+2. 在脚本管理器中导入 [`release/学习通简易助手.user.js`](release/学习通简易助手.user.js)，确认启用。如果已经装了原版 OCS，先把原版在学习通网站上停用，避免两个脚本同时操作页面。
+3. 登录学习通**网页版**，打开需要学习的课程。等 OCS 悬浮窗口出现，选择「超星学习通 → 学习通简易刷课」。
+4. 在「视频倍速」里选速度。「随机自动答题」默认关闭；若开启，会随机选择视频弹题以及章节测验中的单选、多选、判断题。更改开关后刷新课程页，让当前任务重新读取设置。
 
-![GitHub Repo stars](https://img.shields.io/github/stars/ocsjs/ocsjs)
-![npm](https://img.shields.io/npm/v/ocsjs?color=red)
-![NPM](https://img.shields.io/npm/l/ocsjs)
-![今日安装](https://img.shields.io/badge/dynamic/json?color=orange&label=今日安装&query=$.data.today_install&url=https://scriptcat.org/api/v2/scripts/367)
-![总共安装](https://img.shields.io/badge/dynamic/json?color=red&label=总共安装&query=$.data.total_install&url=https://scriptcat.org/api/v2/scripts/367)
+## 行为与限制
 
-</div>
- 
-<div align="center">
+- 视频和课程任务仍由 OCS 的原有流程处理。高于 2 倍速时，学习记录可能不被平台认可；先用 1～2 倍速检查自己的课程是否正常记录进度。
+- 章节测验若全部是可识别的选择／判断题，会随机选择并自动提交。遇到填空等不支持的题型，或页面无法确认选中状态／找不到提交函数，会停在当前章节，留给你手动检查。
+- 随机答案不保证正确。这个定制版关闭了 OCS 的作业和正式考试自动答题入口；随机开关只针对课程视频弹题与章节任务。
+- 尚未在你的学习通账号和课程页面实测。不同学校的页面模板可能需要调整选择器。
+- 请从本仓库的 `release` 目录获取脚本；不要把学习通密码输入第三方“代刷”网站。
 
-## 官网及教程 [https://docs.ocsjs.com](https://docs.ocsjs.com)
+## 开发与验证
 
-</div>
+源代码修改主要在 `packages/scripts/src/projects/cx.ts` 和 `packages/scripts/src/utils/random-choice.ts`。已通过 TypeScript 编译、OCS 原有 164 项解析测试、随机选项逻辑测试及用户脚本构建。`release` 文件由 `dist/ocs.user.js` 复制而来。

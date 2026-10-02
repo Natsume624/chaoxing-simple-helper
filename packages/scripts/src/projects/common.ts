@@ -489,12 +489,16 @@ export const CommonProject = Project.create({
 				},
 				'randomWork-choice': {
 					defaultValue: false,
-					label: '(仅超星)随机选择',
-					attrs: { type: 'checkbox', title: '题库搜索不到答案时，随机选择任意一个选项，仅支持超星章节测试' }
+					label: '旧版题库随机补位',
+					showIf: 'common.settings.advancedSettings',
+					elementClassName: 'config-details',
+					attrs: { type: 'checkbox', title: '本定制版的课程随机答题请使用「学习通简易刷课」里的开关。' }
 				},
 				'randomWork-complete': {
 					defaultValue: false,
-					label: '(仅超星)随机填空',
+					label: '旧版题库随机填空',
+					showIf: 'common.settings.advancedSettings',
+					elementClassName: 'config-details',
 					attrs: { type: 'checkbox', title: '题库搜索不到答案时，随机填写以下任意一个文案，仅支持超星章节测试' }
 				},
 				'randomWork-completeTexts-textarea': {

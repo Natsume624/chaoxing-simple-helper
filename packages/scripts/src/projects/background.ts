@@ -389,7 +389,8 @@ export const BackgroundProject = Project.create({
 					defaultValue: '脚本自动更新模块，如果有新的版本会自动通知。'
 				},
 				autoNotify: {
-					defaultValue: true,
+					// This local fork must not suggest replacing itself with the official OCS release.
+					defaultValue: false,
 					label: '开启更新通知',
 					attrs: { type: 'checkbox', title: '当有最新的版本时自动弹窗通知，默认开启' }
 				},

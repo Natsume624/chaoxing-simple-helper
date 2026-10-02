@@ -47,6 +47,6 @@ const infos = GM_info;
 			defaultPanelName: CommonProject.scripts.guide.namespace,
 			title: `OCS-${infos.script.version}`
 		},
-		updatePage: 'https://docs.ocsjs.com/docs/update'
+		updatePage: ''
 	});
 })();

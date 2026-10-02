@@ -45,19 +45,9 @@ async function createUserJs() {
 
 	/** @return {import('../packages/utils').CreateOptions} */
 	const createOptions = () => {
-		const { CXProject, ZHSProject, ZJYProject, IcveMoocProject, ICourseProject, YKTProject } = ocs;
-		const projectList = [CXProject, ZHSProject, ZJYProject, IcveMoocProject, ICourseProject, YKTProject]
-			.map((s) => `【${s.name}】`)
-			.join(' ');
-
-		const matchMetadata = Array.from(
-			new Set(
-				ocs
-					.definedProjects()
-					.map((p) => (p.domains || []).map((d) => `*://*.${d}/*`))
-					.flat()
-			)
-		);
+		const matchMetadata = ocs.CXProject.domains
+			.filter((domain) => domain !== 'edu.cn' && domain !== 'org.cn')
+			.flatMap((domain) => [`*://${domain}/*`, `*://*.${domain}/*`]);
 
 		return {
 			parseRequire: true,
@@ -71,17 +61,12 @@ async function createUserJs() {
 				gap: '\t'.repeat(4)
 			},
 			metadata: {
-				name: 'OCS 网课助手',
+				name: '学习通简易助手（基于 OCS）',
 				version: version,
-				description: [
-					'OCS(online-course-script) 网课助手，官网 https://docs.ocsjs.com ，专注于帮助大学生从网课中释放出来',
-					'让自己的时间把握在自己的手中，拥有人性化的操作页面，流畅的步骤提示，支持 ',
-					projectList,
-					'等网课的学习，作业。具体的功能请查看脚本悬浮窗中的教程页面。'
-				].join(' '),
-				author: 'enncy',
+				description: `基于 OCS ${version} 的本地定制版。学习通支持自选倍速和随机答题开关。`,
+				author: 'enncy (OCS); Codex (local customization)',
 				license: 'MIT',
-				namespace: 'https://enncy.cn',
+				namespace: 'local.chaoxing.simple.ocs',
 				homepage: 'https://docs.ocsjs.com',
 				source: 'https://github.com/ocsjs/ocsjs',
 				icon: 'https://cdn.ocsjs.com/logo.png',

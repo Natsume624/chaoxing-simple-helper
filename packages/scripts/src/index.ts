@@ -24,14 +24,5 @@ export { YKTProject } from './projects/yuketang';
 export { RenderScript } from './render';
 
 export function definedProjects(): Project[] {
-	return [
-		ZHSProject,
-		CXProject,
-		IcveMoocProject,
-		ZJYProject,
-		ICourseProject,
-		YKTProject,
-		CommonProject,
-		BackgroundProject
-	];
+	return [CXProject, CommonProject, BackgroundProject];
 }

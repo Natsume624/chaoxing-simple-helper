@@ -13,5 +13,5 @@
 		"resolveJsonModule": true
 	},
 	"include": ["./src/**/*.ts"],
-	"files": ["./global.d.ts"]
+	"files": ["./global.d.ts", "./lodash-debounce.d.ts"]
 }
